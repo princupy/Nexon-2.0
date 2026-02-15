@@ -3,6 +3,11 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { logger } from "../core/logger";
 
+const dynamicImport = new Function(
+  "modulePath",
+  "return import(modulePath);",
+) as (modulePath: string) => Promise<unknown>;
+
 const VALID_SCRIPT_EXTENSIONS = new Set([
   ".ts",
   ".js",
@@ -56,7 +61,7 @@ export async function loadDefaultExports<T>(directory: string): Promise<T[]> {
 
   for (const filePath of filePaths) {
     const fileUrl = pathToFileURL(filePath).href;
-    const imported = await import(fileUrl);
+    const imported = await dynamicImport(fileUrl);
     let candidate: unknown = imported;
 
     // Handle both ESM default export and nested CJS transpiled default export.
