@@ -1,0 +1,54 @@
+import {
+  Client,
+  Collection,
+  GatewayIntentBits,
+  Partials,
+  type Snowflake,
+} from "discord.js";
+import { PrefixService } from "../services/prefix/prefix-service";
+import { supabase } from "../services/supabase/client";
+import { GuildConfigRepository } from "../services/supabase/repositories/guild-config.repository";
+import type {
+  ButtonComponentHandler,
+  ModalComponentHandler,
+  SelectMenuComponentHandler,
+} from "../types/component";
+import type { PrefixCommand } from "../types/prefix-command";
+
+export class NexonClient extends Client {
+  public readonly prefixCommands = new Collection<string, PrefixCommand>();
+
+  public readonly buttonHandlers = new Collection<
+    string,
+    ButtonComponentHandler
+  >();
+  public readonly buttonRegexHandlers: ButtonComponentHandler[] = [];
+
+  public readonly selectMenuHandlers = new Collection<
+    string,
+    SelectMenuComponentHandler
+  >();
+  public readonly selectMenuRegexHandlers: SelectMenuComponentHandler[] = [];
+
+  public readonly modalHandlers = new Collection<string, ModalComponentHandler>();
+  public readonly modalRegexHandlers: ModalComponentHandler[] = [];
+
+  public readonly supabase = supabase;
+  public readonly repositories = {
+    guildConfig: new GuildConfigRepository(this.supabase),
+  };
+  public readonly prefixService = new PrefixService(this.repositories.guildConfig);
+
+  public readonly cooldowns = new Collection<string, Collection<Snowflake, number>>();
+
+  public constructor() {
+    super({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+      ],
+      partials: [Partials.Channel],
+    });
+  }
+}
