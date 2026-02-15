@@ -31,7 +31,15 @@ const prefixCommand: PrefixCommand = {
   name: "prefix",
   aliases: ["setprefix"],
   description: "Views or updates the server prefix.",
+  usage: "prefix [set <newPrefix> | reset]",
+  usages: [
+    "prefix",
+    "prefix set <newPrefix>",
+    "prefix reset",
+  ],
   guildOnly: true,
+  category: "Utility",
+  group: "extra",
   async execute({ client, message, args, prefix }) {
     const sendResponse = async (details: string): Promise<void> => {
       const unixTime = Math.floor(Date.now() / 1000);

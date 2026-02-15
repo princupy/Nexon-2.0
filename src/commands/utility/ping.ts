@@ -4,8 +4,12 @@ import { buildStatusCardMessage } from "../../ui/component-v2/status-card";
 
 const pingPrefixCommand: PrefixCommand = {
   name: "ping",
-  description: "Displays bot latency and Discord API ping.",
+  description: "Displays current bot latency and Discord gateway ping.",
+  usage: "ping",
+  usages: ["ping"],
   guildOnly: true,
+  category: "Utility",
+  group: "extra",
   async execute({ client, message }) {
     await message.reply(
       buildStatusCardMessage({

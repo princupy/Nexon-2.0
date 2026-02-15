@@ -5,6 +5,11 @@ import {
   buildBotContainerResponse,
   getClientAvatarUrl,
 } from "../../ui/component-v2/container-response";
+import {
+  buildGreetEditorPanel,
+  createGreetEditorSessionKey,
+  setDraftField,
+} from "../../services/welcome/greet-editor.service";
 
 function hasAdminPermissions(
   memberPermissions: PermissionsBitField | null,
@@ -27,6 +32,61 @@ const messageCreateEvent: NexonEvent<"messageCreate"> = {
     }
 
     const prefix = await client.prefixService.getGuildPrefix(message.guildId);
+
+    const editorSessionKey = createGreetEditorSessionKey(
+      message.guildId,
+      message.author.id,
+    );
+    const editorSession = client.greetEditorSessions.get(editorSessionKey);
+
+    if (
+      editorSession &&
+      editorSession.awaitingField &&
+      message.channelId === editorSession.channelId &&
+      !message.content.startsWith(prefix)
+    ) {
+      const value = message.content.trim();
+      if (!value) {
+        return;
+      }
+
+      editorSession.draft = setDraftField(
+        editorSession.draft,
+        editorSession.awaitingField,
+        value,
+      );
+      editorSession.awaitingField = null;
+      client.greetEditorSessions.set(editorSessionKey, editorSession);
+
+      const panelMessage = await message.channel.messages
+        .fetch(editorSession.panelMessageId)
+        .catch(() => null);
+
+      if (panelMessage) {
+        await panelMessage.edit(
+          buildGreetEditorPanel({
+            avatarUrl: getClientAvatarUrl(client),
+            prefix,
+            session: editorSession,
+            note: "Field updated successfully.",
+          }),
+        );
+      }
+
+      const confirmation = await message.reply(
+        buildBotContainerResponse({
+          avatarUrl: getClientAvatarUrl(client),
+          title: "Welcome Editor",
+          body: "Value saved and preview updated.",
+        }),
+      );
+
+      setTimeout(() => {
+        void confirmation.delete().catch(() => undefined);
+      }, 7000);
+      return;
+    }
+
     if (!message.content.startsWith(prefix)) {
       return;
     }

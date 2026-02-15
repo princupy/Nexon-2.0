@@ -23,6 +23,13 @@ Features are being added incrementally, tested, and refined.
 - `N!prefix`
 - `N!prefix set <newPrefix>` (`Manage Server` or `Administrator` required)
 - `N!prefix reset` (`Manage Server` or `Administrator` required)
+- `N!greet setup`
+- `N!greet channel #channel`
+- `N!greet edit <message>`
+- `N!greet autodelete <seconds|off>`
+- `N!greet test [@user]`
+- `N!greet config`
+- `N!greet reset`
 
 ## Planned Expansion
 
@@ -47,6 +54,7 @@ Populate `.env`:
 Run Supabase migration:
 
 - `supabase/migrations/20260214_guild_configs.sql`
+- `supabase/migrations/20260215_greet_configs.sql`
 
 Run in development:
 

@@ -38,7 +38,7 @@ type V2SectionAccessory =
 
 export interface V2SectionInput {
   text: string[];
-  accessory: V2SectionAccessory;
+  accessory?: V2SectionAccessory;
 }
 
 interface BotContainerResponseInput {
@@ -172,7 +172,7 @@ export function buildBotContainerResponse(input: BotContainerResponseInput) {
       container.addSectionComponents(
         buildV2Section({
           text: section.text,
-          accessory: section.accessory,
+          ...(section.accessory ? { accessory: section.accessory } : {}),
         }),
       );
     }
