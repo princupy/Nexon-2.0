@@ -1,11 +1,35 @@
 # Nexon
 
-Discord all-in-one bot foundation in TypeScript with:
+Nexon is a Discord bot project built with TypeScript, Discord Components V2, and Supabase.
 
-- `discord.js` + clean handlers/events architecture
-- Supabase integration (`@supabase/supabase-js`)
-- Discord Components V2-first messaging structure
-- Default prefix `N!` + per-server custom prefix
+## Project Status
+
+**In Active Development**
+
+This repository currently contains the core architecture and foundational modules.  
+Features are being added incrementally, tested, and refined.
+
+## Current Foundation
+
+- Prefix-based command system (default: `N!`)
+- Per-server custom prefix management
+- Components V2 response framework
+- Centralized handlers/loaders/events architecture
+- Supabase integration for persistent guild configuration
+
+## Current Commands
+
+- `N!ping`
+- `N!prefix`
+- `N!prefix set <newPrefix>` (`Manage Server` or `Administrator` required)
+- `N!prefix reset` (`Manage Server` or `Administrator` required)
+
+## Planned Expansion
+
+- Moderation modules
+- Utility and server-management tools
+- Ticketing and automation systems
+- Additional dashboard-style Components V2 interfaces
 
 ## Quick Start
 
@@ -14,23 +38,23 @@ npm install
 cp .env.example .env
 ```
 
-Fill `.env`:
+Populate `.env`:
 
 - `DISCORD_TOKEN`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-Run SQL migration in Supabase:
+Run Supabase migration:
 
 - `supabase/migrations/20260214_guild_configs.sql`
 
-Run in dev mode:
+Run in development:
 
 ```bash
 npm run dev
 ```
 
-Build and start production:
+Build and run:
 
 ```bash
 npm run build
@@ -56,12 +80,5 @@ src/
 
 ## Notes
 
-- This setup is intentionally modular so we can add features one-by-one.
-- Components V2 messages require `MessageFlags.IsComponentsV2` and are already wired in starter UI.
-- This bot is configured as prefix-only (slash commands are disabled).
-- Default server prefix: `N!`
-- Prefix commands:
-  - `N!ping`
-  - `N!prefix`
-  - `N!prefix set <newPrefix>` (`Manage Server` or `Administrator` required)
-  - `N!prefix reset` (`Manage Server` or `Administrator` required)
+- Components V2 messages require `MessageFlags.IsComponentsV2`.
+- Slash commands are currently disabled.
