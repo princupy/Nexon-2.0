@@ -34,6 +34,7 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   welcome: "Welcome onboarding and greeting configuration commands.",
   config: "Server configuration commands, including prefix management.",
   utility: "Utility and diagnostic commands for server operations.",
+  owner: "Bot-owner only commands for privileged access control.",
   general: "General purpose commands.",
 };
 
@@ -42,6 +43,7 @@ export interface HelpCategory {
   label: string;
   group: PrefixCommandGroup;
   description: string;
+  ownerOnly: boolean;
   commands: HelpDisplayCommand[];
 }
 
@@ -57,6 +59,7 @@ interface HelpDisplayCommand {
   usage?: string | undefined;
   usages?: string[] | undefined;
   aliases?: string[] | undefined;
+  ownerOnly: boolean;
   sortGroupKey: string;
   sortOrder: number;
 }
@@ -91,6 +94,10 @@ function getUniqueCommands(commands: Iterable<PrefixCommand>): PrefixCommand[] {
   const unique = new Map<string, PrefixCommand>();
 
   for (const command of commands) {
+    if (command.hidden) {
+      continue;
+    }
+
     const key = command.name.toLowerCase();
     if (!unique.has(key)) {
       unique.set(key, command);
@@ -113,6 +120,7 @@ function mapHelpItemToDisplayCommand(
     usage: item.usage?.trim(),
     usages,
     aliases: item.aliases,
+    ownerOnly: command.ownerOnly === true,
     sortGroupKey: command.name.toLowerCase(),
     sortOrder: index,
   };
@@ -136,18 +144,36 @@ function mapCommandToDisplayCommands(command: PrefixCommand): HelpDisplayCommand
       usage: command.usage,
       usages: command.usages,
       aliases: command.aliases,
+      ownerOnly: command.ownerOnly === true,
       sortGroupKey: command.name.toLowerCase(),
       sortOrder: 0,
     },
   ];
 }
 
-function renderCategoryList(categories: HelpCategory[]): string {
+function isCategoryLocked(category: HelpCategory, isBotOwner: boolean): boolean {
+  return category.ownerOnly && !isBotOwner;
+}
+
+function formatCategoryLabel(category: HelpCategory, isBotOwner: boolean): string {
+  if (isCategoryLocked(category, isBotOwner)) {
+    return `${category.label} (Locked)`;
+  }
+
+  return category.label;
+}
+
+function renderCategoryList(categories: HelpCategory[], isBotOwner: boolean): string {
   if (!categories.length) {
     return "> 1. None";
   }
 
-  return categories.map((category, index) => `> ${index + 1}. ${category.label}`).join("\n");
+  return categories
+    .map(
+      (category, index) =>
+        `> ${index + 1}. ${formatCategoryLabel(category, isBotOwner)}`,
+    )
+    .join("\n");
 }
 
 function trimText(value: string, maxLength: number): string {
@@ -162,6 +188,7 @@ function buildCategorySelect(input: {
   group: PrefixCommandGroup;
   guildId: string;
   ownerId: string;
+  isBotOwner: boolean;
   placeholder: string;
   categories: HelpCategory[];
   selectedCategoryKey?: string | undefined;
@@ -184,12 +211,20 @@ function buildCategorySelect(input: {
   }
 
   select.addOptions(
-    input.categories.map((category) => ({
-      label: trimText(category.label, 100),
-      value: category.key,
-      description: trimText(category.description, 100),
-      default: category.key === input.selectedCategoryKey,
-    })),
+    input.categories.map((category) => {
+      const locked = isCategoryLocked(category, input.isBotOwner);
+      return {
+        label: trimText(formatCategoryLabel(category, input.isBotOwner), 100),
+        value: category.key,
+        description: trimText(
+          locked
+            ? "Locked category. Only bot owners can open this category."
+            : category.description,
+          100,
+        ),
+        default: category.key === input.selectedCategoryKey,
+      };
+    }),
   );
 
   return select;
@@ -206,13 +241,11 @@ function resolveUsageLines(prefix: string, command: HelpDisplayCommand): string[
   const list = command.usages?.filter((entry) => entry.trim().length > 0);
 
   if (list?.length) {
-    return list.map(
-      (entry, index) => `${index + 1}. \`${prefix}${entry.trim()}\``,
-    );
+    return list.map((entry) => `- \`${prefix}${entry.trim()}\``);
   }
 
   const usage = command.usage?.trim() || command.name;
-  return [`1. \`${prefix}${usage}\``];
+  return [`- \`${prefix}${usage}\``];
 }
 
 function resolveAliases(command: HelpDisplayCommand): string {
@@ -265,6 +298,7 @@ export function buildHelpCatalog(commands: Iterable<PrefixCommand>): HelpCatalog
       label,
       group,
       description: resolveCategoryDescription(key, label),
+      ownerOnly: false,
       commands: displayCommands,
     });
   }
@@ -273,6 +307,10 @@ export function buildHelpCatalog(commands: Iterable<PrefixCommand>): HelpCatalog
     categories.sort((a, b) => a.label.localeCompare(b.label));
 
     for (const category of categories) {
+      category.ownerOnly =
+        category.commands.length > 0 &&
+        category.commands.every((command) => command.ownerOnly);
+
       category.commands.sort((a, b) => {
         const byGroup = a.sortGroupKey.localeCompare(b.sortGroupKey);
         if (byGroup !== 0) {
@@ -335,12 +373,14 @@ export function buildHelpHomeMessage(input: {
   prefix: string;
   ownerId: string;
   guildId: string;
+  isBotOwner: boolean;
   catalog: HelpCatalog;
 }) {
   const mainSelect = buildCategorySelect({
     group: "main",
     guildId: input.guildId,
     ownerId: input.ownerId,
+    isBotOwner: input.isBotOwner,
     placeholder: "Select Main Category",
     categories: input.catalog.mainCategories,
   });
@@ -349,6 +389,7 @@ export function buildHelpHomeMessage(input: {
     group: "extra",
     guildId: input.guildId,
     ownerId: input.ownerId,
+    isBotOwner: input.isBotOwner,
     placeholder: "Select Extra Category",
     categories: input.catalog.extraCategories,
   });
@@ -377,10 +418,10 @@ export function buildHelpHomeMessage(input: {
       new TextDisplayBuilder().setContent(
         [
           "### Main Commands",
-          renderCategoryList(input.catalog.mainCategories),
+          renderCategoryList(input.catalog.mainCategories, input.isBotOwner),
           "",
           "### Extra Commands",
-          renderCategoryList(input.catalog.extraCategories),
+          renderCategoryList(input.catalog.extraCategories, input.isBotOwner),
         ].join("\n"),
       ),
     )
@@ -407,6 +448,7 @@ export function buildHelpCategoryMessage(input: {
   prefix: string;
   ownerId: string;
   guildId: string;
+  isBotOwner: boolean;
   catalog: HelpCatalog;
   group: PrefixCommandGroup;
   categoryKey: string;
@@ -476,6 +518,7 @@ export function buildHelpCategoryMessage(input: {
     group: "main",
     guildId: input.guildId,
     ownerId: input.ownerId,
+    isBotOwner: input.isBotOwner,
     placeholder: "Switch Main Category",
     categories: input.catalog.mainCategories,
     selectedCategoryKey: category.group === "main" ? category.key : undefined,
@@ -485,6 +528,7 @@ export function buildHelpCategoryMessage(input: {
     group: "extra",
     guildId: input.guildId,
     ownerId: input.ownerId,
+    isBotOwner: input.isBotOwner,
     placeholder: "Switch Extra Category",
     categories: input.catalog.extraCategories,
     selectedCategoryKey: category.group === "extra" ? category.key : undefined,
@@ -542,3 +586,5 @@ export function buildHelpCategoryMessage(input: {
     components: [container],
   } as const;
 }
+
+

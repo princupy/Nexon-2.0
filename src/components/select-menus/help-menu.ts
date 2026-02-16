@@ -59,12 +59,21 @@ const helpMenuSelectHandler: SelectMenuComponentHandler = {
       return;
     }
 
+    const isBotOwner = await client.isBotOwner(interaction.user.id);
+    if (category.ownerOnly && !isBotOwner) {
+      await replyError(
+        "This category is locked. Only bot owners can access Owner commands.",
+      );
+      return;
+    }
+
     await interaction.update(
       buildHelpCategoryMessage({
         avatarUrl,
         prefix,
         ownerId: parsed.userId,
         guildId: parsed.guildId,
+        isBotOwner,
         catalog,
         group: category.group,
         categoryKey: category.key,

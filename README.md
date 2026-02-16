@@ -50,11 +50,14 @@ Populate `.env`:
 - `DISCORD_TOKEN`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `BOT_OWNER_IDS` (comma-separated Discord user IDs, optional but recommended for owner-only commands)
 
 Run Supabase migration:
 
 - `supabase/migrations/20260214_guild_configs.sql`
 - `supabase/migrations/20260215_greet_configs.sql`
+- `supabase/migrations/20260216_owner_controls.sql`
+- `supabase/migrations/20260216_noprefix_expiry.sql`
 
 Run in development:
 
@@ -90,3 +93,6 @@ src/
 
 - Components V2 messages require `MessageFlags.IsComponentsV2`.
 - Slash commands are currently disabled.
+
+
+

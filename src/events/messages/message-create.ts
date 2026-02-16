@@ -1,6 +1,7 @@
 import { PermissionFlagsBits, type PermissionsBitField } from "discord.js";
 import { logger } from "../../core/logger";
 import type { NexonEvent } from "../../types/event";
+import { buildBlacklistedWarningMessage } from "../../services/owner/blacklist-warning.service";
 import {
   buildBotContainerResponse,
   getClientAvatarUrl,
@@ -24,6 +25,23 @@ function hasAdminPermissions(
   );
 }
 
+function isPotentialPrefixlessCommandAttempt(
+  content: string,
+  commandNames: { has: (name: string) => boolean },
+): boolean {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  const [rawName] = trimmed.split(/\s+/);
+  if (!rawName) {
+    return false;
+  }
+
+  return commandNames.has(rawName.toLowerCase());
+}
+
 const messageCreateEvent: NexonEvent<"messageCreate"> = {
   name: "messageCreate",
   async execute(client, message) {
@@ -32,6 +50,38 @@ const messageCreateEvent: NexonEvent<"messageCreate"> = {
     }
 
     const prefix = await client.prefixService.getGuildPrefix(message.guildId);
+    const startsWithPrefix = message.content.startsWith(prefix);
+
+    const isBotOwner = await client.isBotOwner(message.author.id);
+    if (!isBotOwner) {
+      const blacklisted = await client.ownerControlService.isBlacklisted(
+        message.author.id,
+      );
+
+      if (blacklisted) {
+        let attemptedCommand = startsWithPrefix;
+
+        if (!attemptedCommand) {
+          const hasNoPrefixAccess = await client.ownerControlService.isNoPrefixUser(
+            message.author.id,
+          );
+          attemptedCommand =
+            hasNoPrefixAccess &&
+            isPotentialPrefixlessCommandAttempt(message.content, client.prefixCommands);
+        }
+
+        if (attemptedCommand) {
+          await message.reply(
+            buildBlacklistedWarningMessage({
+              client,
+              userId: message.author.id,
+            }),
+          );
+        }
+
+        return;
+      }
+    }
 
     const editorSessionKey = createGreetEditorSessionKey(
       message.guildId,
@@ -87,11 +137,18 @@ const messageCreateEvent: NexonEvent<"messageCreate"> = {
       return;
     }
 
-    if (!message.content.startsWith(prefix)) {
+    const canUseNoPrefix =
+      !startsWithPrefix &&
+      (await client.ownerControlService.isNoPrefixUser(message.author.id));
+
+    if (!startsWithPrefix && !canUseNoPrefix) {
       return;
     }
 
-    const content = message.content.slice(prefix.length).trim();
+    const content = startsWithPrefix
+      ? message.content.slice(prefix.length).trim()
+      : message.content.trim();
+
     if (!content) {
       return;
     }
@@ -109,6 +166,17 @@ const messageCreateEvent: NexonEvent<"messageCreate"> = {
     }
 
     if (command.guildOnly && !message.inGuild()) {
+      return;
+    }
+
+    if (command.ownerOnly && !isBotOwner) {
+      await message.reply(
+        buildBotContainerResponse({
+          avatarUrl: getClientAvatarUrl(client),
+          title: "Nexon",
+          body: "This command is locked. Only bot owners can use it.",
+        }),
+      );
       return;
     }
 

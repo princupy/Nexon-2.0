@@ -1,5 +1,8 @@
 import type { PrefixCommand } from "../../types/prefix-command";
-import { getClientAvatarUrl } from "../../ui/component-v2/container-response";
+import {
+  buildBotContainerResponse,
+  getClientAvatarUrl,
+} from "../../ui/component-v2/container-response";
 import {
   buildHelpCatalog,
   buildHelpCategoryMessage,
@@ -24,15 +27,28 @@ const helpPrefixCommand: PrefixCommand = {
 
     const avatarUrl = getClientAvatarUrl(client);
     const catalog = buildHelpCatalog(client.prefixCommands.values());
+    const isBotOwner = await client.isBotOwner(message.author.id);
     const requestedCategory = args[0] ? findHelpCategoryByToken(catalog, args[0]) : null;
 
     if (requestedCategory) {
+      if (requestedCategory.ownerOnly && !isBotOwner) {
+        await message.reply(
+          buildBotContainerResponse({
+            avatarUrl,
+            title: "Nexon Help",
+            body: "This category is locked. Only bot owners can access Owner commands.",
+          }),
+        );
+        return;
+      }
+
       await message.reply(
         buildHelpCategoryMessage({
           avatarUrl,
           prefix,
           ownerId: message.author.id,
           guildId,
+          isBotOwner,
           catalog,
           group: requestedCategory.group,
           categoryKey: requestedCategory.key,
@@ -48,6 +64,7 @@ const helpPrefixCommand: PrefixCommand = {
         prefix,
         ownerId: message.author.id,
         guildId,
+        isBotOwner,
         catalog,
       }),
     );
@@ -55,3 +72,5 @@ const helpPrefixCommand: PrefixCommand = {
 };
 
 export default helpPrefixCommand;
+
+

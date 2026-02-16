@@ -5,10 +5,14 @@ import {
   Partials,
   type Snowflake,
 } from "discord.js";
+import { env } from "../config/env";
+import { OwnerControlService } from "../services/owner/owner-control.service";
 import { PrefixService } from "../services/prefix/prefix-service";
 import { supabase } from "../services/supabase/client";
+import { BlacklistUserRepository } from "../services/supabase/repositories/blacklist-user.repository";
 import { GreetConfigRepository } from "../services/supabase/repositories/greet-config.repository";
 import { GuildConfigRepository } from "../services/supabase/repositories/guild-config.repository";
+import { NoPrefixUserRepository } from "../services/supabase/repositories/noprefix-user.repository";
 import type {
   ButtonComponentHandler,
   ModalComponentHandler,
@@ -16,6 +20,19 @@ import type {
 } from "../types/component";
 import type { PrefixCommand } from "../types/prefix-command";
 import type { GreetEditorSession } from "../services/welcome/greet-editor.service";
+
+function parseOwnerIds(rawValue: string): Set<string> {
+  const ownerIds = new Set<string>();
+
+  for (const token of rawValue.split(",")) {
+    const normalized = token.trim();
+    if (/^\d+$/.test(normalized)) {
+      ownerIds.add(normalized);
+    }
+  }
+
+  return ownerIds;
+}
 
 export class NexonClient extends Client {
   public readonly prefixCommands = new Collection<string, PrefixCommand>();
@@ -40,10 +57,21 @@ export class NexonClient extends Client {
   public readonly repositories = {
     guildConfig: new GuildConfigRepository(this.supabase),
     greetConfig: new GreetConfigRepository(this.supabase),
+    noPrefixUser: new NoPrefixUserRepository(this.supabase),
+    blacklistUser: new BlacklistUserRepository(this.supabase),
   };
+
   public readonly prefixService = new PrefixService(this.repositories.guildConfig);
+  public readonly ownerControlService = new OwnerControlService(
+    this.repositories.noPrefixUser,
+    this.repositories.blacklistUser,
+  );
 
   public readonly cooldowns = new Collection<string, Collection<Snowflake, number>>();
+
+  private readonly configuredOwnerIds: Set<string>;
+  public readonly botOwnerIds: Set<string>;
+  private ownerIdsHydrated = false;
 
   public constructor() {
     super({
@@ -55,5 +83,43 @@ export class NexonClient extends Client {
       ],
       partials: [Partials.Channel],
     });
+
+    this.configuredOwnerIds = parseOwnerIds(env.BOT_OWNER_IDS);
+    this.botOwnerIds = new Set(this.configuredOwnerIds);
+  }
+
+  public async isBotOwner(userId: string): Promise<boolean> {
+    await this.hydrateBotOwnerIds();
+    return this.botOwnerIds.has(userId);
+  }
+
+  private async hydrateBotOwnerIds(): Promise<void> {
+    if (this.ownerIdsHydrated) {
+      return;
+    }
+
+    const application = this.application;
+    if (!application) {
+      return;
+    }
+
+    this.ownerIdsHydrated = true;
+
+    const resolvedApplication = await application.fetch().catch(() => application);
+    const owner = resolvedApplication.owner;
+
+    if (!owner) {
+      return;
+    }
+
+    if ("members" in owner) {
+      for (const member of owner.members.values()) {
+        this.botOwnerIds.add(member.id);
+      }
+      return;
+    }
+
+    this.botOwnerIds.add(owner.id);
   }
 }
+

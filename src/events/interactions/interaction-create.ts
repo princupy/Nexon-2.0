@@ -1,4 +1,6 @@
 import { type RepliableInteraction } from "discord.js";
+import type { NexonClient } from "../../core/nexon-client";
+import { buildBlacklistedWarningMessage } from "../../services/owner/blacklist-warning.service";
 import { logger } from "../../core/logger";
 import {
   findButtonHandler,
@@ -30,9 +32,41 @@ async function sendInteractionError(
   await interaction.reply(payload);
 }
 
+async function sendBlacklistedWarning(
+  interaction: RepliableInteraction,
+  client: NexonClient,
+): Promise<void> {
+  const payload = buildBlacklistedWarningMessage({
+    client,
+    userId: interaction.user.id,
+    ephemeral: true,
+  });
+
+  if (interaction.deferred || interaction.replied) {
+    await interaction.followUp(payload);
+    return;
+  }
+
+  await interaction.reply(payload);
+}
+
 const interactionCreateEvent: NexonEvent<"interactionCreate"> = {
   name: "interactionCreate",
   async execute(client, interaction) {
+    const isBotOwner = await client.isBotOwner(interaction.user.id);
+    if (!isBotOwner) {
+      const blacklisted = await client.ownerControlService.isBlacklisted(
+        interaction.user.id,
+      );
+
+      if (blacklisted) {
+        if (interaction.isRepliable()) {
+          await sendBlacklistedWarning(interaction, client);
+        }
+        return;
+      }
+    }
+
     if (interaction.isChatInputCommand()) {
       await sendInteractionError(
         interaction,

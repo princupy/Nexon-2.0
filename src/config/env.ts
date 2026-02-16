@@ -11,6 +11,12 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z
     .string()
     .min(1, "SUPABASE_SERVICE_ROLE_KEY is required."),
+  BOT_OWNER_IDS: z.string().default(""),
+  NOPREFIX_LOG_CHANNEL_ID: z.string().default(""),
+  SUPPORT_SERVER_INVITE_URL: z
+    .string()
+    .url("SUPPORT_SERVER_INVITE_URL must be a valid URL.")
+    .default("https://discord.com"),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

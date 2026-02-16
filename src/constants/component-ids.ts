@@ -6,12 +6,19 @@ export type HelpGroup = "main" | "extra";
 export type HelpNavigationAction = "home" | "prev" | "next";
 export type GreetSetupAction = "normal" | "colored" | "cancel";
 export type GreetEditorButtonAction = "submit" | "variables" | "cancel";
+export type NoPrefixListAction = "prev" | "next";
+export type BlacklistListAction = "prev" | "next";
+export type NoPrefixAddConfirmAction = "continue" | "cancel";
 
 const HELP_NAV_PREFIX = "nexon:help:nav";
 const HELP_SELECT_PREFIX = "nexon:help:select";
 const GREET_SETUP_PREFIX = "nexon:greet:setup";
 const GREET_EDITOR_SELECT_PREFIX = "nexon:greet:editor:select";
 const GREET_EDITOR_BUTTON_PREFIX = "nexon:greet:editor";
+const NOPREFIX_LIST_NAV_PREFIX = "nexon:noprefix:list";
+const BLACKLIST_LIST_NAV_PREFIX = "nexon:blacklist:list";
+const NOPREFIX_ADD_SELECT_PREFIX = "nexon:noprefix:add:select";
+const NOPREFIX_ADD_CONFIRM_PREFIX = "nexon:noprefix:add:confirm";
 
 export const HELP_NAV_ID_REGEX =
   /^nexon:help:nav:(home|prev|next):(main|extra):([a-z0-9_-]+):(\d+):(\d+):(\d+)$/;
@@ -21,6 +28,18 @@ export const HELP_SELECT_ID_REGEX =
 
 export const GREET_SETUP_ID_REGEX =
   /^nexon:greet:setup:(normal|colored|cancel):(\d+):(\d+)$/;
+
+export const NOPREFIX_LIST_NAV_ID_REGEX =
+  /^nexon:noprefix:list:(prev|next):(\d+):(\d+):(\d+)$/;
+
+export const BLACKLIST_LIST_NAV_ID_REGEX =
+  /^nexon:blacklist:list:(prev|next):(\d+):(\d+):(\d+)$/;
+
+export const NOPREFIX_ADD_SELECT_ID_REGEX =
+  /^nexon:noprefix:add:select:(\d+):(\d+):(\d+)$/;
+
+export const NOPREFIX_ADD_CONFIRM_ID_REGEX =
+  /^nexon:noprefix:add:confirm:(c|x):(\d+):(\d+):(\d+):([a-z0-9_]+)$/;
 
 export function createHelpNavId(
   action: HelpNavigationAction,
@@ -138,6 +157,156 @@ export const GREET_EDITOR_SELECT_ID_REGEX =
 
 export const GREET_EDITOR_BUTTON_ID_REGEX =
   /^nexon:greet:editor:(submit|variables|cancel):(\d+):(\d+)$/;
+
+export function createNoPrefixListNavId(
+  action: NoPrefixListAction,
+  page: number,
+  guildId: string,
+  userId: string,
+): string {
+  return `${NOPREFIX_LIST_NAV_PREFIX}:${action}:${page}:${guildId}:${userId}`;
+}
+
+export function parseNoPrefixListNavId(customId: string): {
+  action: NoPrefixListAction;
+  page: number;
+  guildId: string;
+  userId: string;
+} | null {
+  const match = NOPREFIX_LIST_NAV_ID_REGEX.exec(customId);
+  if (!match) {
+    return null;
+  }
+
+  const action = match[1] as NoPrefixListAction;
+  const page = Number.parseInt(match[2] ?? "", 10);
+  const guildId = match[3];
+  const userId = match[4];
+
+  if (!action || Number.isNaN(page) || !guildId || !userId) {
+    return null;
+  }
+
+  return {
+    action,
+    page,
+    guildId,
+    userId,
+  };
+}
+
+export function createBlacklistListNavId(
+  action: BlacklistListAction,
+  page: number,
+  guildId: string,
+  userId: string,
+): string {
+  return `${BLACKLIST_LIST_NAV_PREFIX}:${action}:${page}:${guildId}:${userId}`;
+}
+
+export function parseBlacklistListNavId(customId: string): {
+  action: BlacklistListAction;
+  page: number;
+  guildId: string;
+  userId: string;
+} | null {
+  const match = BLACKLIST_LIST_NAV_ID_REGEX.exec(customId);
+  if (!match) {
+    return null;
+  }
+
+  const action = match[1] as BlacklistListAction;
+  const page = Number.parseInt(match[2] ?? "", 10);
+  const guildId = match[3];
+  const userId = match[4];
+
+  if (!action || Number.isNaN(page) || !guildId || !userId) {
+    return null;
+  }
+
+  return {
+    action,
+    page,
+    guildId,
+    userId,
+  };
+}
+
+export function createNoPrefixAddSelectId(
+  guildId: string,
+  userId: string,
+  targetUserId: string,
+): string {
+  return `${NOPREFIX_ADD_SELECT_PREFIX}:${guildId}:${userId}:${targetUserId}`;
+}
+
+export function parseNoPrefixAddSelectId(customId: string): {
+  guildId: string;
+  userId: string;
+  targetUserId: string;
+} | null {
+  const match = NOPREFIX_ADD_SELECT_ID_REGEX.exec(customId);
+  if (!match) {
+    return null;
+  }
+
+  const guildId = match[1];
+  const userId = match[2];
+  const targetUserId = match[3];
+
+  if (!guildId || !userId || !targetUserId) {
+    return null;
+  }
+
+  return {
+    guildId,
+    userId,
+    targetUserId,
+  };
+}
+
+export function createNoPrefixAddConfirmId(
+  action: NoPrefixAddConfirmAction,
+  guildId: string,
+  userId: string,
+  targetUserId: string,
+  durationKey: string,
+): string {
+  const actionToken = action === "continue" ? "c" : "x";
+  return `${NOPREFIX_ADD_CONFIRM_PREFIX}:${actionToken}:${guildId}:${userId}:${targetUserId}:${durationKey}`;
+}
+
+export function parseNoPrefixAddConfirmId(customId: string): {
+  action: NoPrefixAddConfirmAction;
+  guildId: string;
+  userId: string;
+  targetUserId: string;
+  durationKey: string;
+} | null {
+  const match = NOPREFIX_ADD_CONFIRM_ID_REGEX.exec(customId);
+  if (!match) {
+    return null;
+  }
+
+  const actionToken = match[1];
+  const action: NoPrefixAddConfirmAction = actionToken === "c" ? "continue" : "cancel";
+  const guildId = match[2];
+  const userId = match[3];
+  const targetUserId = match[4];
+  const durationKey = match[5];
+
+  if (!action || !guildId || !userId || !targetUserId || !durationKey) {
+    return null;
+  }
+
+  return {
+    action,
+    guildId,
+    userId,
+    targetUserId,
+    durationKey,
+  };
+}
 
 export function createGreetEditorSelectId(
   guildId: string,

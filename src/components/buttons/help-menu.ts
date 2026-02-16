@@ -47,6 +47,7 @@ const helpMenuButtonHandler: ButtonComponentHandler = {
 
     const prefix = await client.prefixService.getGuildPrefix(parsed.guildId);
     const catalog = buildHelpCatalog(client.prefixCommands.values());
+    const isBotOwner = await client.isBotOwner(interaction.user.id);
 
     if (parsed.action === "home") {
       await interaction.update(
@@ -55,6 +56,7 @@ const helpMenuButtonHandler: ButtonComponentHandler = {
           prefix,
           ownerId: parsed.userId,
           guildId: parsed.guildId,
+          isBotOwner,
           catalog,
         }),
       );
@@ -69,8 +71,16 @@ const helpMenuButtonHandler: ButtonComponentHandler = {
           prefix,
           ownerId: parsed.userId,
           guildId: parsed.guildId,
+          isBotOwner,
           catalog,
         }),
+      );
+      return;
+    }
+
+    if (category.ownerOnly && !isBotOwner) {
+      await replyError(
+        "This category is locked. Only bot owners can access Owner commands.",
       );
       return;
     }
@@ -83,6 +93,7 @@ const helpMenuButtonHandler: ButtonComponentHandler = {
         prefix,
         ownerId: parsed.userId,
         guildId: parsed.guildId,
+        isBotOwner,
         catalog,
         group: category.group,
         categoryKey: category.key,

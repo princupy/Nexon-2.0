@@ -23,3 +23,5 @@ const pingPrefixCommand: PrefixCommand = {
 };
 
 export default pingPrefixCommand;
+
+

@@ -24,6 +24,8 @@ export interface PrefixCommand {
   description: string;
   guildOnly?: boolean;
   adminOnly?: boolean;
+  ownerOnly?: boolean;
+  hidden?: boolean;
   usage?: string;
   usages?: string[];
   helpItems?: PrefixCommandHelpItem[];
