@@ -35,6 +35,7 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   config: "Server configuration commands, including prefix management.",
   utility: "Utility and diagnostic commands for server operations.",
   owner: "Bot-owner only commands for privileged access control.",
+  antinuke: "Server protection and antinuke defense commands.",
   general: "General purpose commands.",
 };
 
@@ -586,5 +587,8 @@ export function buildHelpCategoryMessage(input: {
     components: [container],
   } as const;
 }
+
+
+
 
 

@@ -21,6 +21,7 @@ const NOPREFIX_LIST_NAV_PREFIX = "nexon:noprefix:list";
 const BLACKLIST_LIST_NAV_PREFIX = "nexon:blacklist:list";
 const NOPREFIX_ADD_SELECT_PREFIX = "nexon:noprefix:add:select";
 const NOPREFIX_ADD_CONFIRM_PREFIX = "nexon:noprefix:add:confirm";
+const ANTINUKE_WHITELIST_SELECT_PREFIX = "nexon:an:wl:s";
 
 export const HELP_NAV_ID_REGEX =
   /^nexon:help:nav:(home|prev|next):(main|extra):([a-z0-9_-]+):(\d+):(\d+):(\d+)$/;
@@ -45,6 +46,9 @@ export const NOPREFIX_ADD_SELECT_ID_REGEX =
 
 export const NOPREFIX_ADD_CONFIRM_ID_REGEX =
   /^nexon:noprefix:add:confirm:(c|x):(\d+):(\d+):(\d+):([a-z0-9_]+)$/;
+
+export const ANTINUKE_WHITELIST_SELECT_ID_REGEX =
+  /^nexon:an:wl:s:(\d+):(\d+):(\d+)$/;
 
 export function createHelpNavId(
   action: HelpNavigationAction,
@@ -271,6 +275,39 @@ export function parseBlacklistListNavId(customId: string): {
     page,
     guildId,
     userId,
+  };
+}
+
+export function createAntinukeWhitelistSelectId(
+  guildId: string,
+  userId: string,
+  targetUserId: string,
+): string {
+  return `${ANTINUKE_WHITELIST_SELECT_PREFIX}:${guildId}:${userId}:${targetUserId}`;
+}
+
+export function parseAntinukeWhitelistSelectId(customId: string): {
+  guildId: string;
+  userId: string;
+  targetUserId: string;
+} | null {
+  const match = ANTINUKE_WHITELIST_SELECT_ID_REGEX.exec(customId);
+  if (!match) {
+    return null;
+  }
+
+  const guildId = match[1];
+  const userId = match[2];
+  const targetUserId = match[3];
+
+  if (!guildId || !userId || !targetUserId) {
+    return null;
+  }
+
+  return {
+    guildId,
+    userId,
+    targetUserId,
   };
 }
 

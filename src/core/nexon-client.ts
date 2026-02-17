@@ -6,9 +6,12 @@ import {
   type Snowflake,
 } from "discord.js";
 import { env } from "../config/env";
+import { AntinukeService } from "../services/antinuke/antinuke.service";
 import { OwnerControlService } from "../services/owner/owner-control.service";
 import { PrefixService } from "../services/prefix/prefix-service";
 import { supabase } from "../services/supabase/client";
+import { AntinukeConfigRepository } from "../services/supabase/repositories/antinuke-config.repository";
+import { AntinukeWhitelistUserRepository } from "../services/supabase/repositories/antinuke-whitelist-user.repository";
 import { BlacklistUserRepository } from "../services/supabase/repositories/blacklist-user.repository";
 import { GreetConfigRepository } from "../services/supabase/repositories/greet-config.repository";
 import { GuildConfigRepository } from "../services/supabase/repositories/guild-config.repository";
@@ -59,12 +62,18 @@ export class NexonClient extends Client {
     greetConfig: new GreetConfigRepository(this.supabase),
     noPrefixUser: new NoPrefixUserRepository(this.supabase),
     blacklistUser: new BlacklistUserRepository(this.supabase),
+    antinukeConfig: new AntinukeConfigRepository(this.supabase),
+    antinukeWhitelistUser: new AntinukeWhitelistUserRepository(this.supabase),
   };
 
   public readonly prefixService = new PrefixService(this.repositories.guildConfig);
   public readonly ownerControlService = new OwnerControlService(
     this.repositories.noPrefixUser,
     this.repositories.blacklistUser,
+  );
+  public readonly antinukeService = new AntinukeService(
+    this.repositories.antinukeConfig,
+    this.repositories.antinukeWhitelistUser,
   );
 
   public readonly cooldowns = new Collection<string, Collection<Snowflake, number>>();
@@ -79,6 +88,7 @@ export class NexonClient extends Client {
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
       ],
@@ -123,5 +133,3 @@ export class NexonClient extends Client {
     this.botOwnerIds.add(owner.id);
   }
 }
-
-

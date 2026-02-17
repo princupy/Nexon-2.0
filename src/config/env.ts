@@ -13,6 +13,7 @@ const envSchema = z.object({
     .min(1, "SUPABASE_SERVICE_ROLE_KEY is required."),
   BOT_OWNER_IDS: z.string().default(""),
   NOPREFIX_LOG_CHANNEL_ID: z.string().default(""),
+  ANTINUKE_LOG_CHANNEL_ID: z.string().default(""),
   SUPPORT_SERVER_INVITE_URL: z
     .string()
     .url("SUPPORT_SERVER_INVITE_URL must be a valid URL.")
