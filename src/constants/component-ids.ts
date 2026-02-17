@@ -4,6 +4,7 @@ export const COMPONENT_IDS = {
 
 export type HelpGroup = "main" | "extra";
 export type HelpNavigationAction = "home" | "prev" | "next";
+export type BotInfoNavigationAction = "home" | "prev" | "next";
 export type GreetSetupAction = "normal" | "colored" | "cancel";
 export type GreetEditorButtonAction = "submit" | "variables" | "cancel";
 export type NoPrefixListAction = "prev" | "next";
@@ -12,6 +13,7 @@ export type NoPrefixAddConfirmAction = "continue" | "cancel";
 
 const HELP_NAV_PREFIX = "nexon:help:nav";
 const HELP_SELECT_PREFIX = "nexon:help:select";
+const BOTINFO_NAV_PREFIX = "nexon:botinfo:nav";
 const GREET_SETUP_PREFIX = "nexon:greet:setup";
 const GREET_EDITOR_SELECT_PREFIX = "nexon:greet:editor:select";
 const GREET_EDITOR_BUTTON_PREFIX = "nexon:greet:editor";
@@ -25,6 +27,9 @@ export const HELP_NAV_ID_REGEX =
 
 export const HELP_SELECT_ID_REGEX =
   /^nexon:help:select:(main|extra):(\d+):(\d+)$/;
+
+export const BOTINFO_NAV_ID_REGEX =
+  /^nexon:botinfo:nav:(home|prev|next):(\d+):(\d+):(\d+)$/;
 
 export const GREET_SETUP_ID_REGEX =
   /^nexon:greet:setup:(normal|colored|cancel):(\d+):(\d+)$/;
@@ -114,6 +119,43 @@ export function parseHelpSelectId(customId: string): {
 
   return {
     group,
+    guildId,
+    userId,
+  };
+}
+
+export function createBotInfoNavId(
+  action: BotInfoNavigationAction,
+  page: number,
+  guildId: string,
+  userId: string,
+): string {
+  return `${BOTINFO_NAV_PREFIX}:${action}:${page}:${guildId}:${userId}`;
+}
+
+export function parseBotInfoNavId(customId: string): {
+  action: BotInfoNavigationAction;
+  page: number;
+  guildId: string;
+  userId: string;
+} | null {
+  const match = BOTINFO_NAV_ID_REGEX.exec(customId);
+  if (!match) {
+    return null;
+  }
+
+  const action = match[1] as BotInfoNavigationAction;
+  const page = Number.parseInt(match[2] ?? "", 10);
+  const guildId = match[3];
+  const userId = match[4];
+
+  if (!action || Number.isNaN(page) || !guildId || !userId) {
+    return null;
+  }
+
+  return {
+    action,
+    page,
     guildId,
     userId,
   };

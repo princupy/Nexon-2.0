@@ -78,6 +78,7 @@ export class NexonClient extends Client {
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
       ],
@@ -122,4 +123,5 @@ export class NexonClient extends Client {
     this.botOwnerIds.add(owner.id);
   }
 }
+
 
