@@ -10,6 +10,8 @@ export type GreetEditorButtonAction = "submit" | "variables" | "cancel";
 export type NoPrefixListAction = "prev" | "next";
 export type BlacklistListAction = "prev" | "next";
 export type NoPrefixAddConfirmAction = "continue" | "cancel";
+export type AfkModeAction = "server" | "global" | "cancel";
+export type BannerViewType = "user" | "server";
 
 const HELP_NAV_PREFIX = "nexon:help:nav";
 const HELP_SELECT_PREFIX = "nexon:help:select";
@@ -22,6 +24,8 @@ const BLACKLIST_LIST_NAV_PREFIX = "nexon:blacklist:list";
 const NOPREFIX_ADD_SELECT_PREFIX = "nexon:noprefix:add:select";
 const NOPREFIX_ADD_CONFIRM_PREFIX = "nexon:noprefix:add:confirm";
 const ANTINUKE_WHITELIST_SELECT_PREFIX = "nexon:an:wl:s";
+const AFK_MODE_PREFIX = "nexon:afk:m";
+const BANNER_VIEW_SELECT_PREFIX = "nexon:banner:select";
 
 export const HELP_NAV_ID_REGEX =
   /^nexon:help:nav:(home|prev|next):(main|extra):([a-z0-9_-]+):(\d+):(\d+):(\d+)$/;
@@ -49,6 +53,12 @@ export const NOPREFIX_ADD_CONFIRM_ID_REGEX =
 
 export const ANTINUKE_WHITELIST_SELECT_ID_REGEX =
   /^nexon:an:wl:s:(\d+):(\d+):(\d+)$/;
+
+export const AFK_MODE_ID_REGEX =
+  /^nexon:afk:m:(s|g|x):(\d+):(\d+)$/;
+
+export const BANNER_VIEW_SELECT_ID_REGEX =
+  /^nexon:banner:select:(\d+):(\d+):(\d+)$/;
 
 export function createHelpNavId(
   action: HelpNavigationAction,
@@ -273,6 +283,84 @@ export function parseBlacklistListNavId(customId: string): {
   return {
     action,
     page,
+    guildId,
+    userId,
+  };
+}
+
+export function createBannerViewSelectId(
+  guildId: string,
+  userId: string,
+  targetUserId: string,
+): string {
+  return `${BANNER_VIEW_SELECT_PREFIX}:${guildId}:${userId}:${targetUserId}`;
+}
+
+export function parseBannerViewSelectId(customId: string): {
+  guildId: string;
+  userId: string;
+  targetUserId: string;
+} | null {
+  const match = BANNER_VIEW_SELECT_ID_REGEX.exec(customId);
+  if (!match) {
+    return null;
+  }
+
+  const guildId = match[1];
+  const userId = match[2];
+  const targetUserId = match[3];
+
+  if (!guildId || !userId || !targetUserId) {
+    return null;
+  }
+
+  return {
+    guildId,
+    userId,
+    targetUserId,
+  };
+}
+
+export function createAfkModeId(
+  action: AfkModeAction,
+  guildId: string,
+  userId: string,
+): string {
+  const actionToken = action === "server"
+    ? "s"
+    : action === "global"
+      ? "g"
+      : "x";
+
+  return `${AFK_MODE_PREFIX}:${actionToken}:${guildId}:${userId}`;
+}
+
+export function parseAfkModeId(customId: string): {
+  action: AfkModeAction;
+  guildId: string;
+  userId: string;
+} | null {
+  const match = AFK_MODE_ID_REGEX.exec(customId);
+  if (!match) {
+    return null;
+  }
+
+  const actionToken = match[1];
+  const action: AfkModeAction = actionToken === "s"
+    ? "server"
+    : actionToken === "g"
+      ? "global"
+      : "cancel";
+
+  const guildId = match[2];
+  const userId = match[3];
+
+  if (!action || !guildId || !userId) {
+    return null;
+  }
+
+  return {
+    action,
     guildId,
     userId,
   };
